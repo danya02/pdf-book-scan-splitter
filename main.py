@@ -31,3 +31,33 @@ image_paths = pdf2image.convert_from_path(src_file, output_folder=temp_dir_name,
 
 print("Converted PDF into", len(image_paths), "pages")
 
+widths = []
+heights = []
+print("Determining output resolution...")
+for file in image_paths:
+    with open(file, 'rb') as f:
+        f.readline()  # ignore first line, it is the magic byte
+        w, h = map(int, f.readline().strip().decode().split(' '))
+        widths.append(w)
+        heights.append(h)
+SIZE_MARGIN = 100
+min_w, max_w = min(widths), max(widths)
+min_h, max_h = min(heights), max(heights)
+
+size_warning = False
+if max_w - min_w > SIZE_MARGIN:
+    print("WARNING: the width varies widely! Min:", min_w, "Max:", max_w)
+    size_warning = True
+if max_h - min_h > SIZE_MARGIN:
+    print("WARNING: the height varies widely! Min:", min_h, "Max:", max_h)
+    size_warning = True
+
+if size_warning:
+    print("The pages do not appear to be of a similar size. This may cause them to be misaligned.")
+    input("Press <ENTER> to proceed...")
+
+print(f"Double page resolution: {max_w}x{max_h}")
+double_page_bounds = pygame.Rect((0, 0, max_w, max_h))
+
+
+input()
