@@ -19,6 +19,7 @@ import pygame
 import pdf2image
 import tempfile
 import os
+import image_cache
 
 src_file = ''
 while not os.path.isfile(src_file):
@@ -28,6 +29,7 @@ while not os.path.isfile(src_file):
 temp_dir = tempfile.TemporaryDirectory()
 temp_dir_name = temp_dir.name
 image_paths = pdf2image.convert_from_path(src_file, output_folder=temp_dir_name, paths_only=True)
+images = image_cache.ImageCache(image_paths)
 
 print("Converted PDF into", len(image_paths), "pages")
 
@@ -58,6 +60,28 @@ if size_warning:
 
 print(f"Double page resolution: {max_w}x{max_h}")
 double_page_bounds = pygame.Rect((0, 0, max_w, max_h))
+
+MAX_WINDOW_SIZE = (800, 600)
+if max_w > max_h:
+    disp_w = MAX_WINDOW_SIZE[0]
+    disp_h = int(max_h * (disp_w / max_w))
+else:
+    disp_h = MAX_WINDOW_SIZE[1]
+    disp_w = int(max_w * (disp_h / max_h))
+
+blackened_image = pygame.Surface((max_w, max_h))
+blackened_image.fill('white')
+print("Rendering blackened image...")
+
+for ind in range(images.count):
+    blackened_image.blit(images[ind], (0, 0), special_flags=pygame.BLEND_MIN)
+
+print("Blackened image rendered, displaying to screen...")
+blackened_scaled = pygame.transform.scale(blackened_image, (disp_w, disp_h))
+
+screen = pygame.display.set_mode((disp_w, disp_h))
+screen.blit(blackened_scaled, (0, 0))
+pygame.display.update()
 
 
 input()
