@@ -15,7 +15,7 @@
 
 import pygame
 from user_interface import UserInterface
-from common import scale_to_screen
+from common import scale_to_screen, draw_transformed
 
 class OverlayRectEditor(UserInterface):
     def __init__(self, images, prop_name, default=True):
@@ -57,7 +57,7 @@ class OverlayRectEditor(UserInterface):
         
         for i in range(self.images.count):
             if self.images.data[i].get(self.prop_name, self.default_value):
-                self.surface.blit(self.images[i], (0,0), special_flags=self.modes[self.mode])
+                draw_transformed(self.surface, self.images, i, special_flags=self.modes[self.mode])
         self.small_surface = scale_to_screen(self.surface)
         pygame.display.set_mode(self.small_surface.get_size())
 
@@ -85,6 +85,8 @@ class OverlayRectEditor(UserInterface):
         for ev in pygame.event.get():
             if ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_SPACE:
+                    if self.is_resetting: continue
+                    self.is_resetting = True
                     self.mode += 1
                     self.mode %= len(self.modes)
                     self.on_enter()
@@ -177,7 +179,7 @@ class OverlayRectEditor(UserInterface):
 
 
             elif ev.type == pygame.KEYUP:
-                if ev.key == pygame.K_r:
+                if ev.key == pygame.K_r or ev.key == pygame.K_SPACE:
                     self.is_resetting = False
 
 

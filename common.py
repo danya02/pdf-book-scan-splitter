@@ -35,6 +35,13 @@ def draw_transformed(target, images, ind, real_surface=None, special_flags=0):
     if scale_fac==1 and rot_deg==0:
         target.blit(real_surface, images.data[ind].get('position', (0,0)), special_flags=special_flags)
         return
-    rotozoom = pygame.transform.rotozoom(real_surface, rot_deg, scale_fac)
-    target.blit(rotozoom, images.data[ind].get('position', (0,0)), special_flags=special_flags)
+
+    rotated = pygame.transform.rotate(real_surface, rot_deg)
+    nx,ny = rotated.get_size()
+    nx *= scale_fac
+    ny *= scale_fac
+    nx = int(nx)
+    ny = int(ny)
+    zoomed = pygame.transform.scale(rotated, (nx, ny))
+    target.blit(zoomed, images.data[ind].get('position', (0,0)), special_flags=special_flags)
 

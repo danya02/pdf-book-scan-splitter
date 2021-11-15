@@ -23,6 +23,9 @@ import image_cache
 from page_selector import PageSelector
 from overlay_rect_editor import OverlayRectEditor
 from page_aligner import PageAligner
+import PIL
+import common
+import io
 
 src_file = ''
 while not os.path.isfile(src_file):
@@ -72,24 +75,68 @@ else:
     disp_h = MAX_WINDOW_SIZE[1]
     disp_w = int(max_w * (disp_h / max_h))
 
-interfaces = [PageSelector(images, "include in overlay", "do_overlay", default=True), OverlayRectEditor(images, "do_overlay", default=True)] # PageAligner(images)]
+interfaces = [PageSelector(images, "include in overlay", "do_overlay", default=True), OverlayRectEditor(images, "do_overlay", default=True), PageAligner(images)]
 current_interface_index = 0
 interfaces[current_interface_index].on_enter()
 clock = pygame.time.Clock()
 pygame.init()
 pygame.display.set_mode((800, 600))
+
+def save(images):
+    print("Saving initiated!")
+    path = input("Path to save PDF to (no extension): ") + ".pdf"
+    rect = images.globals.get('rect', double_page_bounds)
+    offset = images.globals.get('offset', rect.width//2)
+    left_rect = rect.copy()
+    left_rect.width = offset
+    right_rect = rect.copy()
+    right_rect.width -= offset
+    right_rect.left = left_rect.right
+    pil_img = []
+    for i in range(images.count):
+        print("Rendering page", i)
+        trans_img = pygame.Surface(images[i].get_rect().inflate(images[i].get_size()).size)
+        trans_img.fill('white')
+        common.draw_transformed(trans_img, images, i)
+        left_sub = pygame.Surface(left_rect.size)
+        left_sub.blit(trans_img, (-left_rect.x, -left_rect.y))
+        right_sub = pygame.Surface(right_rect.size)
+        right_sub.blit(trans_img, (-right_rect.x, -right_rect.y))
+        left = io.BytesIO()
+        right = io.BytesIO()
+        pygame.image.save(left_sub, left, "left.pbm")
+        pygame.image.save(right_sub, right, "right.pbm")
+        pil_img.append(PIL.Image.open(left))
+        pil_img.append(PIL.Image.open(right))
+
+    print("Writing all pages to file...")
+    pil_img[0].save(path, "PDF", resolution=100.0, save_all=True, append_images=pil_img[1:])
+    print("Saving completed!")
+    
+
 while 1:
     for event in pygame.event.get(eventtype=pygame.KEYDOWN):
-        if event.key != pygame.K_TAB:
+        if event.key not in [pygame.K_TAB, pygame.K_RETURN]:
             pygame.event.post(event)
             continue
-        # tab pressed, switching UIs
-        interfaces[current_interface_index].on_exit()
-        clock.tick(30)
-        current_interface_index += 1
-        current_interface_index %= len(interfaces)
-        interfaces[current_interface_index].on_enter()
+        if event.key == pygame.K_TAB:
+            interfaces[current_interface_index].on_exit()
+            clock.tick(30)
+            current_interface_index += 1
+            current_interface_index %= len(interfaces)
+            interfaces[current_interface_index].on_enter()
+        elif event.key == pygame.K_RETURN:
+            screen = pygame.display.get_surface()
+            screen.fill('black')
+            font = pygame.font.SysFont(pygame.font.get_default_font(), 32)
+            text = font.render("Switch to the terminal now.", True, 'white', 'black')
+            rect = text.get_rect()
+            scr_rect = screen.get_rect()
+            rect.center = scr_rect.center
+            screen.blit(text, rect)
+            pygame.display.update()
+            
+            save(images)
+            
     interfaces[current_interface_index].on_frame()
     clock.tick(30)
-
-input()

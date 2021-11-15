@@ -22,81 +22,36 @@ class PageAligner(UserInterface):
     def __init__(self, images):
         self.images = images
         self.current_page = 0
-        self.frame_timer = float('inf')  # to force a render of the overlay image
-        self.render_mode = 0
-        self.inv_img = None
-        self.overlayable_cache = dict()
+        self.color_factor = 0
 
     def on_enter(self):
         pygame.display.set_caption("Align pages: WASD move, QE rotate, [] scale, R reset")
-        pygame.key.set_repeat(1000, 10)
-        if 'overlay_surf' not in self.__dict__:
-            self.render_current_overlay()
+        pygame.key.set_repeat(200, 10)
 
     def on_exit(self):
         pygame.key.set_repeat()
-
-    def render_current_overlay(self):
-        screen = pygame.display.get_surface()
-        screen.fill('black')
-        font = pygame.font.SysFont(pygame.font.get_default_font(), 32)
-        text = font.render("Processing...", True, 'white', 'black')
-        rect = text.get_rect()
-        scr_rect = screen.get_rect()
-        rect.center = scr_rect.center
-        screen.blit(text, rect)
-        pygame.display.update()
-
-        
-        rect = pygame.Rect((0,0,0,0))
-        for i in range(self.images.count):
-            rect.union_ip(self.images[i].get_rect())
-        
-        self.overlay_surf = pygame.Surface(rect.size)
-        self.overlay_surf.fill('white')
-        
-        for i in range(self.images.count):
-            if i == self.current_page: continue
-            if self.images.data[i].get("do_overlay", True):
-                draw_transformed(self.overlay_surf, self.images, i, special_flags=pygame.BLEND_MIN)
-
-        pygame.event.clear()
-
-    def render_this_page(self):
-        self.current_page_overlayable = self.overlayable_cache.get(self.render_mode)
-        if self.current_page_overlayable is not None: return
-
-        inv_img = self.inv_img
-        if inv_img is None:
-            src_img = self.images[self.current_page]
-            inv_img = pygame.Surface(src_img.get_size())
-            inv_img.fill('white')
-            inv_img.blit(src_img, (0,0), special_flags=pygame.BLEND_SUB)
-            self.inv_img = inv_img
-            del src_img
-        inv_buf = bytearray(pygame.image.tostring(inv_img, 'RGB'))
-        size = inv_img.get_size()
-
-        for i in range(len(inv_buf)//3):
-            inv_buf[i*3] *= int(self.render_mode==0)
-            inv_buf[i*3+1] *= int(self.render_mode==1)
-            inv_buf[i*3+2] *= int(self.render_mode==2)
-
-        self.current_page_overlayable = pygame.image.frombuffer(inv_buf, size, 'RGB')
-        self.current_page_overlayable.set_colorkey('black')
-        self.overlayable_cache[self.render_mode] = self.current_page_overlayable
+    
+    def get_fullsize_rect(self):
+        surf = pygame.Surface(self.images[self.current_page].get_size())
+        surf.convert_alpha()
+        surf.set_colorkey('black')
+        rect = self.images.globals.get('rect', surf.get_rect())
+        color = pygame.Color('black')
+        color.hsva = (self.color_factor, 100, 100, 100)
+        pygame.draw.rect(surf, color, rect, width=5)
+        color.hsva = ( (self.color_factor+180)%360, 100, 100, 100)
+        offset = self.images.globals.get('offset', rect.width//2)
+        pygame.draw.line(surf, color, (rect.x + offset, rect.top), (rect.x+offset, rect.bottom), width=5)
+        return surf
 
     def on_frame(self):
-        self.frame_timer += 1
-        if self.frame_timer >= 30:
-            self.frame_timer = 0
-            self.render_mode += 1
-            self.render_mode %= 3
-            self.render_this_page()
-
-        target_img = self.overlay_surf.copy()
-        draw_transformed(target_img, self.images, self.current_page, real_surface=self.current_page_overlayable)
-        target_small = scale_to_screen(target_img)
+        self.color_factor += 1
+        self.color_factor %= 360
+        full_rect = self.get_fullsize_rect()
+        target = pygame.Surface(full_rect.get_size())
+        draw_transformed(target, self.images, self.current_page)
+        target.blit(full_rect, (0,0))
+        target_small = scale_to_screen(target)
         screen = pygame.display.get_surface()
         if screen.get_size() != target_small.get_size():
             screen = pygame.display.set_mode(target_small.get_size())
@@ -108,17 +63,9 @@ class PageAligner(UserInterface):
                 if ev.key == pygame.K_LEFT:
                     self.current_page -= 1
                     self.current_page %= self.images.count
-                    self.render_current_overlay()
-                    self.inv_img = None
-                    self.frame_timer = float('inf')
-                    self.overlayable_cache.clear()
                 if ev.key == pygame.K_RIGHT:
                     self.current_page += 1
                     self.current_page %= self.images.count
-                    self.render_current_overlay()
-                    self.inv_img = None
-                    self.frame_timer = float('inf')
-                    self.overlayable_cache.clear()
                 if ev.key in [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]:
                     offsets = {
                             pygame.K_w: (0, -1),
