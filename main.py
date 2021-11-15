@@ -20,6 +20,7 @@ import pdf2image
 import tempfile
 import os
 import image_cache
+from page_selector import PageSelector
 
 src_file = ''
 while not os.path.isfile(src_file):
@@ -69,19 +70,23 @@ else:
     disp_h = MAX_WINDOW_SIZE[1]
     disp_w = int(max_w * (disp_h / max_h))
 
-blackened_image = pygame.Surface((max_w, max_h))
-blackened_image.fill('white')
-print("Rendering blackened image...")
-
-for ind in range(images.count):
-    blackened_image.blit(images[ind], (0, 0), special_flags=pygame.BLEND_MIN)
-
-print("Blackened image rendered, displaying to screen...")
-blackened_scaled = pygame.transform.scale(blackened_image, (disp_w, disp_h))
-
-screen = pygame.display.set_mode((disp_w, disp_h))
-screen.blit(blackened_scaled, (0, 0))
-pygame.display.update()
-
+interfaces = [PageSelector(images, "include in overlay", "do_overlay", default=True)]
+current_interface_index = 0
+interfaces[current_interface_index].on_enter()
+clock = pygame.time.Clock()
+pygame.init()
+while 1:
+    for event in pygame.event.get(eventtype=pygame.KEYDOWN):
+        if event.key != pygame.K_TAB:
+            pygame.event.post(event)
+            continue
+        # tab pressed, switching UIs
+        interfaces[current_interface_index].on_exit()
+        clock.tick(30)
+        current_interface_index += 1
+        current_interface_index %= len(interfaces)
+        interfaces[current_interface_index].on_enter()
+    interfaces[current_interface_index].on_frame()
+    clock.tick(30)
 
 input()
