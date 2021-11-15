@@ -61,6 +61,7 @@ class ImageCache:
         self.image_paths = images
         self.image_refs = dict()
         self.data = [JsObject() for _ in images]
+        self.globals = JsObject()
 
     def get_real_image(self, item):
         img = pygame.image.load(self.image_paths[item])
