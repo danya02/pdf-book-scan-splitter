@@ -31,7 +31,7 @@ class JsObject(object):
 		return self.__dict__.__setitem__(name, val)
 
 	def __delitem__(self, name):
-		if self.__dict__.has_key(name):
+		if name in self.__dict__:
 			del self.__dict__[name]
 
 	def __getattr__(self, name):

@@ -22,6 +22,7 @@ import os
 import image_cache
 from page_selector import PageSelector
 from overlay_viewer import OverlayViewer
+from page_aligner import PageAligner
 
 src_file = ''
 while not os.path.isfile(src_file):
@@ -71,7 +72,7 @@ else:
     disp_h = MAX_WINDOW_SIZE[1]
     disp_w = int(max_w * (disp_h / max_h))
 
-interfaces = [PageSelector(images, "include in overlay", "do_overlay", default=True), OverlayViewer(images, "do_overlay", default=True)]
+interfaces = [PageSelector(images, "include in overlay", "do_overlay", default=True), OverlayViewer(images, "do_overlay", default=True), PageAligner(images)]
 current_interface_index = 0
 interfaces[current_interface_index].on_enter()
 clock = pygame.time.Clock()

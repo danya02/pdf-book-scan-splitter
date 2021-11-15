@@ -1,4 +1,4 @@
-# Copyright (C) <year>  <name of author>
+# Copyright (C) 2021 Danya Generalov
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,4 +26,15 @@ def scale_to_screen(img: pygame.Surface) -> pygame.Surface:
         rw = int(w * (H/h))
 
     return pygame.transform.scale(img, (rw, rh))
+
+def draw_transformed(target, images, ind, real_surface=None, special_flags=0):
+    if real_surface is None:
+        real_surface = images[ind]
+    scale_fac = images.data[ind].get('scale', 1)
+    rot_deg = images.data[ind].get('rotate', 0)
+    if scale_fac==1 and rot_deg==0:
+        target.blit(real_surface, images.data[ind].get('position', (0,0)), special_flags=special_flags)
+        return
+    rotozoom = pygame.transform.rotozoom(real_surface, rot_deg, scale_fac)
+    target.blit(rotozoom, images.data[ind].get('position', (0,0)), special_flags=special_flags)
 
