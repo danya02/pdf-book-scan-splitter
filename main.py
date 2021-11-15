@@ -21,6 +21,7 @@ import tempfile
 import os
 import image_cache
 from page_selector import PageSelector
+from overlay_viewer import OverlayViewer
 
 src_file = ''
 while not os.path.isfile(src_file):
@@ -70,11 +71,12 @@ else:
     disp_h = MAX_WINDOW_SIZE[1]
     disp_w = int(max_w * (disp_h / max_h))
 
-interfaces = [PageSelector(images, "include in overlay", "do_overlay", default=True)]
+interfaces = [PageSelector(images, "include in overlay", "do_overlay", default=True), OverlayViewer(images, "do_overlay", default=True)]
 current_interface_index = 0
 interfaces[current_interface_index].on_enter()
 clock = pygame.time.Clock()
 pygame.init()
+pygame.display.set_mode((800, 600))
 while 1:
     for event in pygame.event.get(eventtype=pygame.KEYDOWN):
         if event.key != pygame.K_TAB:

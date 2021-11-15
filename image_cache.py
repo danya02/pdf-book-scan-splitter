@@ -52,6 +52,9 @@ class JsObject(object):
 	def __str__(self):
 		return self.__dict__.__str__()
 
+	def get(self, *args, **kwargs):
+		return self.__dict__.get(*args, **kwargs)
+
 
 class ImageCache:
     def __init__(self, images):

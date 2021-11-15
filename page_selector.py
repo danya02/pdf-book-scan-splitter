@@ -13,7 +13,6 @@ class PageSelector(UserInterface):
 
     def on_enter(self):
         pygame.display.set_caption("Select pages to " + self.selected_reason + ": GREEN means selected, toggle SPACE, switch LEFT/RIGHT")
-        pygame.display.set_mode((800,600))
 
     def on_frame(self):
         if self.cached_scaled_image is None:
